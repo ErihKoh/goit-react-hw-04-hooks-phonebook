@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState } from 'react';
 import PropTypes from 'prop-types';
 import '@pnotify/core/dist/BrightTheme.css';
 import '@pnotify/core/dist/PNotify.css';
@@ -8,41 +8,16 @@ import Section from '../Section';
 import ContactForm from '../ContactForm';
 import ContactList from '../ContactList';
 import Filter from '../Filter';
+import useLocalStorage from '../../hooks/useLocalStorage';
 import s from './PhonebookView.module.css';
-// import contacts from './components/ContactList/contacts';
 
 defaults.delay = 2000;
 
-class PhonebookView extends Component {
-  state = {
-    contacts: [],
-    filter: '',
-  };
+export default function PhonebookView() {
+  const [contacts, setContacts] = useLocalStorage('contacts', []);
+  const [filter, setFilter] = useState('');
 
-  static propTypes = {
-    contacts: PropTypes.array,
-    filter: PropTypes.string,
-  };
-
-  componentDidMount() {
-    const contacts = localStorage.getItem('contacts');
-    const parseContacts = JSON.parse(contacts);
-    parseContacts && this.setState({ contacts: parseContacts });
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    const nextContacts = this.state.contacts;
-    const prevcontacts = prevState.contacts;
-
-    if (nextContacts !== prevcontacts) {
-      localStorage.setItem('contacts', JSON.stringify(nextContacts));
-    }
-  }
-
-  // функция для получения данных из формы и добавдение в контакты
-
-  addContact = data => {
-    const { contacts } = this.state;
+  const addContact = data => {
     if (data.name === '') {
       return error({
         title: 'Error',
@@ -59,9 +34,7 @@ class PhonebookView extends Component {
     const findContact = contacts.find(({ name }) => data.name === name);
 
     if (!findContact) {
-      this.setState(({ contacts }) => ({
-        contacts: [data, ...contacts],
-      }));
+      setContacts([data, ...contacts]);
       return;
     }
 
@@ -73,42 +46,33 @@ class PhonebookView extends Component {
     }
   };
 
-  // функция для удаления контактов
-
-  deleteContact = contactId => {
-    this.setState(prevState => ({
-      contacts: prevState.contacts.filter(contact => contact.id !== contactId),
-    }));
+  const deleteContact = contactId => {
+    setContacts(contacts.filter(contact => contact.id !== contactId));
   };
 
-  //  функция фильтрации контактов по имени
-
-  changeFilter = e => {
-    this.setState({ filter: e.currentTarget.value });
+  const changeFilter = e => {
+    setFilter(e.currentTarget.value);
   };
 
-  render() {
-    const normalizeFilter = this.state.filter.toLowerCase();
-    const { contacts } = this.state;
-    const filterContact = contacts.filter(contact =>
-      contact.name.toLowerCase().includes(normalizeFilter),
-    );
+  const normalizeFilter = filter.toLowerCase();
+  const filterContact = contacts.filter(contact =>
+    contact.name.toLowerCase().includes(normalizeFilter),
+  );
 
-    return (
-      <div className={s.block}>
-        <Section title="Phonebook">
-          <ContactForm onSubmit={this.addContact} />
-        </Section>
-        <Section title="Contacts">
-          <Filter value={this.state.filter} onChange={this.changeFilter} />
-          <ContactList
-            contacts={filterContact}
-            onDeleteContact={this.deleteContact}
-          />
-        </Section>
-      </div>
-    );
-  }
+  return (
+    <div className={s.block}>
+      <Section title="Phonebook">
+        <ContactForm onSubmit={addContact} />
+      </Section>
+      <Section title="Contacts">
+        <Filter value={filter} onChange={changeFilter} />
+        <ContactList contacts={filterContact} onDeleteContact={deleteContact} />
+      </Section>
+    </div>
+  );
 }
 
-export default PhonebookView;
+PhonebookView.propTypes = {
+  contacts: PropTypes.array,
+  filter: PropTypes.string,
+};
