@@ -1,28 +1,26 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import shortid from 'shortid';
+import { useForm } from 'react-hook-form';
 import s from './ContactForm.module.css';
 
-export default function ContactForm(props) {
+export default function ContactForm({ onSubmit }) {
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
 
-  const handleSubmit = e => {
-    e.preventDefault();
-
-    props.onSubmit({ name, number, id: shortid.generate() });
-    reset();
-  };
-
-  const reset = () => {
-    setName('');
-    setNumber('');
-  };
+  const { register, handleSubmit, reset } = useForm();
 
   return (
-    <form onSubmit={handleSubmit} className={s.form}>
+    <form
+      onSubmit={handleSubmit(() => {
+        onSubmit({ name, number, id: shortid.generate() });
+        reset(setName(''), setNumber(''));
+      })}
+      className={s.form}
+    >
       <label className={s.name}>Name</label>
       <input
+        ref={register}
         className={s.inputName}
         type="text"
         name="name"
@@ -30,8 +28,10 @@ export default function ContactForm(props) {
         autoComplete="off"
         onChange={e => setName(e.target.value)}
       />
+
       <label className={s.number}>Number</label>
       <input
+        ref={register}
         className={s.inputNumber}
         type="tel"
         name="number"
